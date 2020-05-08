@@ -55,31 +55,24 @@ def _validate_pair(ob):
 
     return True
 
-
-def source_zephyr_env(zephyr_wd):
-    """Sets the project environment variables
-    :param zephyr_wd: Zephyr source path
-    :return: environment variables set
+def flash_nrf52(tester_outdir):
+    """ Flash Zephyr binary for nrf52 board
+    :param cwd: Zephyr build directory
+    :return: TTY path
     """
-    logging.debug("{}: {}".format(source_zephyr_env.__name__, zephyr_wd))
+    check_call(['cd', tester_outdir, '&&', 'west',  'flash'])
+    return get_tty_path("J-Link")
 
-    cmd = ['source', './zephyr-env.sh', '&&', 'env']
-    cmd = subprocess.list2cmdline(cmd)
 
-    p = subprocess.Popen(cmd, cwd=zephyr_wd, shell=True,
-                         stdout=subprocess.PIPE, executable='/bin/bash')
 
-    lines = p.stdout.readlines()
-    # XXX: Doesn't parse functions for now
-    filtered_lines = filter(lambda x: (not x.startswith(('BASH_FUNC',
-                                                         ' ', '}'))), lines)
-    pairs = map(lambda l: l.decode('UTF-8').rstrip().split('=', 1),
-                filtered_lines)
-    valid_pairs = filter(_validate_pair, pairs)
-    env = dict(valid_pairs)
-    p.communicate()
+def flash_reel(tester_outdir):
+    """ Flash Zephyr binary for reel board
+    :param cwd: Zephyr build directory
+    :return: TTY path
+    """
+    check_call(['cd', tester_outdir, '&&', 'west',  'flash'])
 
-    return env
+    return get_tty_path("DAPLink")
 
 
 def build_and_flash(zephyr_wd, board, conf_file=None):
@@ -94,16 +87,20 @@ def build_and_flash(zephyr_wd, board, conf_file=None):
     tester_dir = os.path.join(zephyr_wd, "tests", "bluetooth", "tester")
 
     # Set Zephyr project env variables
-    env = source_zephyr_env(zephyr_wd)
+    # env = source_zephyr_env(zephyr_wd)
 
-    cmd = ['west',  'build', '-p', 'auto', '-b', board]
-    if conf_file:
-        cmd.extend(('--', '-DCONF_FILE={}'.format(conf_file)))
+    cmd = ['cd', tester_dir, '&&', 'west',  'build', '-p', 'auto', '-b', board]
 
-    check_call(cmd, env=env, cwd=tester_dir)
-    check_call(['west', 'flash'], env=env, cwd=tester_dir)
+    check_call(cmd)
+    check_call(['cd'])
 
-    return get_tty_path("J-Link")
+    if board == 'nrf52840dk_nrf52840':
+        tty = flash_nrf52(zephyr_wd)
+    elif board == 'reel_board':
+        tty = flash_reel(zephyr_wd)
+    else:
+        # Unsupported board and stop here
+        tty = None
 
 
 def flush_serial(tty):
@@ -147,7 +144,7 @@ def apply_overlay(zephyr_wd, base_conf, cfg_name, overlay):
                     config.write(line)
 
             # apply what's left
-            for k, v in overlay.items():
+            for k, v in list(overlay.items()):
                 config.write("{}={}\n".format(k, v))
 
     os.chdir(cwd)
@@ -155,7 +152,7 @@ def apply_overlay(zephyr_wd, base_conf, cfg_name, overlay):
 
 autopts2board = {
     None: None,
-    'nrf52': 'nrf52840_pca10056',
+    'nrf52': 'nrf52840dk_nrf52840',
     'reel_board' : 'reel_board'
 }
 
@@ -179,7 +176,7 @@ def get_tty_path(name):
         device, serial = line.decode().rstrip().split(" ")
         serial_devices[device] = serial
 
-    for device, serial in serial_devices.items():
+    for device, serial in list(serial_devices.items()):
         if name in device:
             tty = os.path.basename(serial)
             return "/dev/{}".format(tty)
@@ -232,7 +229,7 @@ def run_tests(args, iut_config):
     config_default = "prj.conf"
     _args[config_default] = PtsInitArgs(args)
 
-    for config, value in iut_config.items():
+    for config, value in list(iut_config.items()):
         if 'test_cases' not in value:
             # Rename default config
             _args[config] = _args.pop(config_default)
@@ -261,7 +258,7 @@ def run_tests(args, iut_config):
     stack_inst = stack.get_stack()
     stack_inst.synch_init([pts.callback_thread for pts in ptses])
 
-    for config, value in iut_config.items():
+    for config, value in list(iut_config.items()):
         if 'overlay' in value:
             apply_overlay(args["project_path"], config_default, config,
                           value['overlay'])
@@ -289,8 +286,8 @@ def run_tests(args, iut_config):
             ptses, test_cases, _args[config])
         total_regressions += regressions
 
-        for k, v in status_count.items():
-            if k in status.keys():
+        for k, v in list(status_count.items()):
+            if k in list(status.keys()):
                 status[k] += v
             else:
                 status[k] = v
@@ -298,7 +295,7 @@ def run_tests(args, iut_config):
         results.update(results_dict)
         autoprojects.iutctl.cleanup()
 
-    for test_case_name in results.keys():
+    for test_case_name in list(results.keys()):
         project_name = test_case_name.split('/')[0]
         descriptions[test_case_name] = \
             pts.get_test_case_description(project_name, test_case_name)

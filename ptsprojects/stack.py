@@ -216,7 +216,7 @@ class Gap:
             return False
 
     def iut_addr_get_str(self):
-        addr = self.iut_bd_addr.data["address"]
+        addr = self.iut_bd_addr.data["address"].decode("utf-8")
         if addr:
             return str(addr)
         else:
@@ -369,7 +369,7 @@ class L2capChan:
 
     def is_connected(self, timeout):
         state = self._get_state(timeout)
-        if state is "connected":
+        if state == "connected":
             return True
         return False
 

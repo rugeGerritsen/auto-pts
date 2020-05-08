@@ -382,6 +382,7 @@ def hdl_wid_78(desc):
 
 def hdl_wid_79(desc):
     stack = get_stack()
+    btp.gap_set_nonconn()
     btp.gap_adv_ind_on(ad=stack.gap.ad)
     return True
 

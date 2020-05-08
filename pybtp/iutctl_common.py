@@ -18,11 +18,11 @@ import logging
 import socket
 import binascii
 import threading
-import Queue
+import queue
 
-import defs
-from types import BTPError
-from parser import enc_frame, dec_hdr, dec_data, HDR_LEN
+from . import defs
+from .types import BTPError
+from .parser import enc_frame, dec_hdr, dec_data, HDR_LEN
 
 log = logging.debug
 
@@ -97,26 +97,19 @@ class BTPSocket(object):
             data_memview = data_memview[nbytes:]
             toread_data_len -= nbytes
 
-        tuple_data = dec_data(data)
+        tuple_data = bytes(str(dec_data(data)), 'utf-8').decode("unicode_escape").replace("b'", "'")
+
         log("Received data: %r, %r", tuple_data, data)
         self.conn.settimeout(None)
-
-        return tuple_hdr, tuple_data
+        return tuple_hdr, dec_data(data)
 
     def send(self, svc_id, op, ctrl_index, data):
         """Send BTP formated data over socket"""
         logging.debug("%s, %r %r %r %r",
                       self.send.__name__, svc_id, op, ctrl_index, data)
 
-        if isinstance(data, int):
-            data = str(data)
-            if len(data) == 1:
-                data = "0%s" % data
-                data = binascii.unhexlify(data)
-
-        hex_data = binascii.hexlify(data)
         logging.debug("btpclient command: send %d %d %d %s",
-                      svc_id, op, ctrl_index, hex_data)
+                      svc_id, op, ctrl_index, data)
 
         bin = enc_frame(svc_id, op, ctrl_index, data)
 
@@ -137,7 +130,7 @@ class BTPWorker(BTPSocket):
     def __init__(self):
         super(BTPWorker, self).__init__()
 
-        self._rx_queue = Queue.Queue()
+        self._rx_queue = queue.Queue()
         self._running = threading.Event()
 
         self._rx_worker = threading.Thread(target=self._rx_task)
@@ -218,7 +211,7 @@ class BTPWorker(BTPSocket):
         while not self._rx_queue.empty():
             try:
                 self._rx_queue.get_nowait()
-            except Queue.Empty:
+            except queue.Empty:
                 continue
 
             self._rx_queue.task_done()

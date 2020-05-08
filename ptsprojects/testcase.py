@@ -23,10 +23,10 @@ import sys
 import time
 import logging
 from threading import Thread
-import Queue
+import queue
 
-from utils import exec_iut_cmd
-import ptstypes
+from .utils import exec_iut_cmd
+from . import ptstypes
 
 log = logging.debug
 
@@ -107,7 +107,7 @@ class MmiParser(object):
         args_list = list(args)
 
         for arg_index, arg in enumerate(args):
-            if not isinstance(arg, basestring):  # omit not strings
+            if not isinstance(arg, str):  # omit not strings
                 continue
 
             if arg.startswith(MMI.arg_value_prefix):
@@ -399,7 +399,7 @@ class TestCase(PTSCallback):
         self.generic_wid_hdl = generic_wid_hdl
         self.post_wid_queue = []
         self.post_wid_thread = None
-        self.thread_exception = Queue.Queue()
+        self.thread_exception = queue.Queue()
         self.ptsproject_name = ptsproject_name
         self.tc_subproc = None
         self.lf_subproc = None
@@ -512,7 +512,7 @@ class TestCase(PTSCallback):
 
         my_response = ""
 
-        if self.edit1_wids and wid in self.edit1_wids.keys():
+        if self.edit1_wids and wid in list(self.edit1_wids.keys()):
             response = self.edit1_wids[wid]
             if callable(response):
                 my_response = response(description)
@@ -532,7 +532,7 @@ class TestCase(PTSCallback):
 
         my_response = ""
 
-        if self.ok_cancel_wids and wid in self.ok_cancel_wids.keys():
+        if self.ok_cancel_wids and wid in list(self.ok_cancel_wids.keys()):
             response = self.ok_cancel_wids[wid]
             if callable(response):
                 my_response = response(description)
@@ -603,7 +603,7 @@ class TestCase(PTSCallback):
         # raise exception discovered by thread
         try:
             exc = self.thread_exception.get_nowait()
-        except Queue.Empty:
+        except queue.Empty:
             pass
         else:
             log("Re-raising exception sent from thread %r", exc)
@@ -732,7 +732,7 @@ class TestCase(PTSCallback):
         log("%s %s %s %s" % (self.post_run.__name__, self.project_name,
                              self.name, error_code))
 
-        if error_code in ptstypes.PTSCONTROL_E_STRING.values():
+        if error_code in list(ptstypes.PTSCONTROL_E_STRING.values()):
             self.status = error_code
 
         elif error_code:
@@ -756,7 +756,7 @@ class TestCase(PTSCallback):
         if self.tc_subproc is not None:
             log("%s, cleanup running pre test case script" %
                 self.post_run.__name__)
-            self.tc_subproc.communicate(input='#close\n')
+            self.tc_subproc.communicate(input=b'#close\n')
             self.lf_subproc.close()
 
         subproc_dir = (os.path.dirname(os.path.realpath(__file__)) + "/" +
@@ -774,7 +774,7 @@ class TestCase(PTSCallback):
                                                stdout=self.lf_subproc,
                                                stderr=self.lf_subproc)
 
-            self.tc_subproc.communicate(input='#close\n')
+            self.tc_subproc.communicate(input=b'#close\n')
             self.lf_subproc.close()
 
 

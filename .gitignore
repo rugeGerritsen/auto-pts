@@ -2,6 +2,7 @@
 *.pyc
 *.log
 workspaces
+.idea
 
 *.xlsx
 *.zip
