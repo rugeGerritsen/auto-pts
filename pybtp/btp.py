@@ -638,7 +638,7 @@ def gap_adv_ind_on(ad={}, sd={}, duration=AdDuration.forever, own_addr_type=OwnA
     data_ba.extend(ad_ba)
     data_ba.extend(sd_ba)
     data_ba.extend(struct.pack("<I", duration))
-    data_ba.extend(chr(own_addr_type))
+    data_ba.extend(chr(int(own_addr_type)).encode('utf-8'))
 
     iutctl.btp_socket.send(*GAP['start_adv'], data=data_ba)
 
