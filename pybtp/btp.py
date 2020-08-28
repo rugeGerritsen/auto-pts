@@ -22,7 +22,7 @@ import re
 import socket
 from threading import Timer, Event
 
-import defs
+from . import defs
 from .types import BTPError, gap_settings_btp2txt, addr2btp_ba, Addr, OwnAddrType, AdDuration
 from pybtp.types import Perm
 from .iutctl_common import set_event_handler

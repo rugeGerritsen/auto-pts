@@ -95,9 +95,9 @@ def build_and_flash(zephyr_wd, board, conf_file=None):
     check_call(['cd'])
 
     if board == 'nrf52840dk_nrf52840':
-        tty = flash_nrf52(zephyr_wd)
+        tty = flash_nrf52(tester_dir)
     elif board == 'reel_board':
-        tty = flash_reel(zephyr_wd)
+        tty = flash_reel(tester_dir)
     else:
         # Unsupported board and stop here
         tty = None

@@ -29,11 +29,6 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-from apiclient import discovery, errors
-from apiclient.http import MediaFileUpload
-from httplib2 import Http
-from oauth2client import file, client, tools
-
 SCOPES = 'https://www.googleapis.com/auth/drive'
 CLIENT_SECRET_FILE = 'client_secret.json'
 REPORT_XLSX = "report.xlsx"
