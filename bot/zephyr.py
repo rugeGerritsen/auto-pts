@@ -102,6 +102,7 @@ def build_and_flash(zephyr_wd, board, conf_file=None):
         # Unsupported board and stop here
         tty = None
 
+    return tty
 
 def flush_serial(tty):
     """Clear the serial port buffer
